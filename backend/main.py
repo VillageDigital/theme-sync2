@@ -7,10 +7,7 @@ import sqlite3
 import requests
 import logging
 from pathlib import Path
-from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, Query, HTTPException
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware  
+# from dotenv import load_dotenv  # Commented out for Railway deployment
 
 # ✅ Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -19,12 +16,12 @@ logger = logging.getLogger(__name__)
 # ✅ Ensure Python finds 'backend/'
 sys.path.append(str(Path(__file__).resolve().parent))
 
-# ✅ Explicitly define .env path
-dotenv_path = "C:\\Users\\Merri\\Documents\\Shopify-theme-tool\\backend\\.env"
+# ✅ Explicitly define .env path (Commented out for now)
+# dotenv_path = "C:\\Users\\Merri\\Documents\\Shopify-theme-tool\\backend\\.env"
 
-# ✅ Load environment variables
-if not load_dotenv(dotenv_path, override=True):
-    raise RuntimeError(f"❌ Failed to load .env file! Looked in: {dotenv_path}")
+# ✅ Load environment variables (Commented out for now)
+# if not load_dotenv(dotenv_path, override=True):
+#     raise RuntimeError(f"❌ Failed to load .env file! Looked in: {dotenv_path}")
 
 # ✅ Shopify API Credentials
 SHOPIFY_CLIENT_ID = os.getenv("SHOPIFY_CLIENT_ID")
@@ -33,7 +30,7 @@ SHOPIFY_REDIRECT_URI = os.getenv("SHOPIFY_REDIRECT_URI")
 VITE_BACKEND_URL = os.getenv("VITE_BACKEND_URL", "http://localhost:8000")  # Fallback to localhost
 
 if not SHOPIFY_CLIENT_ID or not SHOPIFY_CLIENT_SECRET or not SHOPIFY_REDIRECT_URI:
-    raise ValueError("❌ ERROR: Missing Shopify API credentials in .env file!")
+    raise ValueError("❌ ERROR: Missing Shopify API credentials in environment variables!")
 
 logger.info("✅ Shopify API credentials loaded successfully.")
 
