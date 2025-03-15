@@ -7,7 +7,9 @@ import sqlite3
 import requests
 import logging
 from pathlib import Path
-# from dotenv import load_dotenv  # Commented out for Railway deployment
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware  
 
 # ✅ Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -15,13 +17,6 @@ logger = logging.getLogger(__name__)
 
 # ✅ Ensure Python finds 'backend/'
 sys.path.append(str(Path(__file__).resolve().parent))
-
-# ✅ Explicitly define .env path (Commented out for now)
-# dotenv_path = "C:\\Users\\Merri\\Documents\\Shopify-theme-tool\\backend\\.env"
-
-# ✅ Load environment variables (Commented out for now)
-# if not load_dotenv(dotenv_path, override=True):
-#     raise RuntimeError(f"❌ Failed to load .env file! Looked in: {dotenv_path}")
 
 # ✅ Shopify API Credentials
 SHOPIFY_CLIENT_ID = os.getenv("SHOPIFY_CLIENT_ID")
@@ -182,4 +177,3 @@ async def upload_theme(version: str, file: UploadFile = File(...)):
 def status():
     """Check if the server is running correctly."""
     return {"status": "running", "message": "FastAPI backend is live!"}
-
