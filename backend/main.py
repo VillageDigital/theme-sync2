@@ -2,14 +2,14 @@ import os
 import sys
 import shutil
 import zipfile
-import difflib
 import sqlite3
 import requests
 import logging
 from pathlib import Path
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, UploadFile, File, Query, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 # ✅ Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 # ✅ Ensure Python finds 'backend/'
 sys.path.append(str(Path(__file__).resolve().parent))
+
+# ✅ Load environment variables from .env file
+dotenv_path = "C:\\Users\\Merri\\Documents\\Shopify-theme-tool\\backend\\.env"
+if not load_dotenv(dotenv_path, override=True):
+    raise RuntimeError(f"❌ Failed to load .env file! Looked in: {dotenv_path}")
 
 # ✅ Shopify API Credentials
 SHOPIFY_CLIENT_ID = os.getenv("SHOPIFY_CLIENT_ID")
