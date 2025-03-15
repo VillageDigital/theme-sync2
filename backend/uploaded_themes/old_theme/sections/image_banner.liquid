@@ -1,0 +1,92 @@
+{% schema %}
+{
+  "name": "Image Banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "banner_image",
+      "label": "Banner Image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Join Us for an Exciting Pop-Up!"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "We can’t wait to see you there!"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button Link"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button Label",
+      "default": "Find Local Soups"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image Banner"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="image-banner">
+  {% if section.settings.banner_image %}
+    <img src="{{ section.settings.banner_image | img_url: 'large' }}" alt="Event Banner">
+  {% endif %}
+  <div class="banner-content">
+    <h2>{{ section.settings.heading }}</h2>
+    <p>{{ section.settings.subheading }}</p>
+    {% if section.settings.button_link != blank %}
+      <a href="{{ section.settings.button_link }}" class="cta-button">
+        {{ section.settings.button_label }}
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.image-banner {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #f8f5ee;
+}
+.image-banner img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.banner-content {
+  margin-top: 20px;
+}
+.banner-content h2 {
+  font-size: 2rem;
+  color: #5a4637;
+}
+.banner-content p {
+  font-size: 1.2rem;
+  color: #8b5e3b;
+}
+.cta-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #8b5e3b;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+.cta-button:hover {
+  background-color: #6f452d;
+}
+</style>

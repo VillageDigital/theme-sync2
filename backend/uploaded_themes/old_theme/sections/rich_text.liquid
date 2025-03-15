@@ -1,0 +1,31 @@
+{% schema %}
+{
+  "name": "Rich Text",
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Text Content",
+      "default": "<p style='color: rgb(139, 94, 59); font-style: italic;'><strong>Can’t make a pop-up? Find Local Soup at the hot soup bar in select locations!</strong></p>"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Rich Text"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="rich-text-section">
+  {{ section.settings.text }}
+</div>
+
+<style>
+.rich-text-section {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 20px 0;
+  color: #8b5e3b;
+}
+</style>
