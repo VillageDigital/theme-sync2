@@ -20,3 +20,11 @@ Thumbs.db
 
 # Shopify
 *.theme
+backend/client_secret_*.json
+backend/themesync-*.json
+backend/tokens.db
+backend/sqlite3.exe
+backend/uploaded_themes/
+response_*.json
+test-themes/
+theme_comparison_report.csv
