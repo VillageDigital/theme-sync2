@@ -1,0 +1,11 @@
+[app]
+name = "ThemeSync"
+handle = "themesync"
+client_id = "6fce6ac1e3e3e7772d0e0a123f2e9d47"
+
+[scopes]
+"read_themes" = true
+"write_themes" = true
+
+[redirect_urls]
+"https://villagedigital-themesync.ngrok.app/api/auth/callback"

@@ -1,0 +1,32 @@
+client_id = "6fce6ac1e3e3e7772d0e0a123f2e9d47"
+application_url = "https://villagedigital-themesync.ngrok.app/"
+embedded = true
+name = "ThemeSync"
+handle = "themesync"
+
+[build]
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "https://coding-cp-previews-signing.trycloudflare.com/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "https://coding-cp-previews-signing.trycloudflare.com/webhooks/app/uninstalled"
+
+[access_scopes]
+scopes = "read_themes,write_products,write_themes"
+
+[auth]
+redirect_urls = [
+  "https://villagedigital-themesync.ngrok.app/auth/callback",
+  "https://villagedigital-themesync.ngrok.app/auth/shopify/callback",
+  "https://villagedigital-themesync.ngrok.app/api/auth/callback"
+]
+
+[pos]
+embedded = false

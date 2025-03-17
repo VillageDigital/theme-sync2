@@ -1,0 +1,11 @@
+[app]
+name = "ThemeSync"
+handle = "themesync"
+client_id = "6fce6ac1e3e3e7772d0e0a123f2e9d47"
+
+[scopes]
+"write_products" = true
+"read_themes" = true
+
+[redirect_urls]
+"https://9f721fac0f80.ngrok.app/api/auth/callback"
