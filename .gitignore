@@ -1,29 +1,65 @@
-# Python
+#########################################
+# 🍰 MERRILY'S THEME-SYNC .GITIGNORE
+# Blocks secrets, build junk, and chaos
+#########################################
+
+# --- PYTHON ---
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# Virtual Environment
+# --- VIRTUAL ENVIRONMENT ---
 venv/
+.venv/
 
-# Node.js
-node_modules/
-
-# Logs
-*.log
-
-# OS-specific files
-.DS_Store
-Thumbs.db
-
-# Shopify
-*.theme
+# --- BACKEND SECRETS ---
 backend/client_secret_*.json
 backend/themesync-*.json
 backend/tokens.db
 backend/sqlite3.exe
+backend/__pycache__/
 backend/uploaded_themes/
-response_*.json
-test-themes/
+
+# --- NODE / JAVASCRIPT ---
+node_modules/
+dist/
+build/
+.next/
+.vite/
+
+# --- OS / EDITOR STUFF ---
+.DS_Store
+Thumbs.db
+.vscode/
+
+# --- SHOPIFY DEV FILES ---
+*.theme
+.shopify/
 theme_comparison_report.csv
+test-themes/
+
+# --- ENVIRONMENT VARIABLES ---
+.env
+.env.*
+*.env
+firebase-key.json
+
+# --- FIRESTORE / GOOGLE SECRETS ---
+_secrets/
+
+# --- SQLITE FILES ---
+*.sqlite
+
+# --- LOG FILES ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- GIT FOLDER CLEANUP ---
+*.swp
+*.swo
+*.tmp
+*.bak
+

@@ -6,51 +6,51 @@ import sqlite3
 import requests
 import logging
 from pathlib import Path
+
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+#from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 # ✅ Setup Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ✅ Ensure Python finds 'backend/'
+# ✅ Ensure Python finds 'backend/' path
 sys.path.append(str(Path(__file__).resolve().parent))
 
-# ✅ Load environment variables from system (Docker, Railway, Local)
+# ✅ Load .env file
 load_dotenv(override=True)
 
-# ✅ Required Environment Variables
+# ✅ Required Environment Vars
 required_env_vars = ["SHOPIFY_CLIENT_ID", "SHOPIFY_CLIENT_SECRET", "SHOPIFY_REDIRECT_URI"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-
 if missing_vars:
-    raise RuntimeError(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+    raise RuntimeError(f"❌ Missing required env vars: {', '.join(missing_vars)}")
 
-# ✅ Shopify API Credentials
 SHOPIFY_CLIENT_ID = os.getenv("SHOPIFY_CLIENT_ID")
 SHOPIFY_CLIENT_SECRET = os.getenv("SHOPIFY_CLIENT_SECRET")
 SHOPIFY_REDIRECT_URI = os.getenv("SHOPIFY_REDIRECT_URI")
-VITE_BACKEND_URL = os.getenv("VITE_BACKEND_URL", "http://localhost:8000")  # Default to localhost
+VITE_BACKEND_URL = os.getenv("VITE_BACKEND_URL", "http://localhost:8000")
 
-logger.info("✅ Shopify API credentials loaded successfully.")
+logger.info("✅ Shopify credentials loaded.")
 
-# ✅ Import API routes
+# ✅ Import routes
 try:
-    from backend.themes import router as themes_router
+    from routes.themes import router as themes_router
 except ModuleNotFoundError:
-    from themes import router as themes_router
+    from routes.themes import router as themes_router
 
-# ✅ Initialize FastAPI app
+# ✅ Init FastAPI
 app = FastAPI()
 
-# ✅ CORS Middleware Setup - Allow Shopify & Local Dev
+# ✅ Enable CORS for Shopify + Localhost + Ngrok
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://village-digital-test.myshopify.com",
-        "https://villagedigital-themesync.ngrok.app",
+        "https://pixelmermaid-lab.myshopify.com",
+        "https://village-digital-themesync.ngrok.app",
         VITE_BACKEND_URL,
         "http://localhost:8000",
     ],
@@ -59,30 +59,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logger.info(f"✅ CORS configured for: https://village-digital-test.myshopify.com, {VITE_BACKEND_URL}, http://localhost:8000")
+# ✅ Mount Remix frontend (for iframe embed at /app)
+#app.mount(
+#    "/app",
+#   StaticFiles(directory=Path(__file__).parent.parent / "theme-sync2" / "public", html=True),
+#    name="frontend",
+#)
 
-# ✅ Include the themes router
+# ✅ Include API routes
 app.include_router(themes_router)
 
-# ✅ Root Route
+# ✅ Root Route → Shopify lands here after install
 @app.get("/")
-def root():
-    """Root route to confirm FastAPI is running & handle Shopify embedded app requests."""
-    return {"message": "ThemeSync App is Running!"}
+def root_redirect():
+    return RedirectResponse(url="/app")
 
-# ✅ Secure Access Token Storage (Using SQLite)
+# ✅ Handle Shopify trailing slash edge case
+@app.get("/app")
+def app_entrypoint():
+    return RedirectResponse(url="/app/")
+
+@app.get("/app/")
+def app_entrypoint_slash():
+    return {"message": "🎉 ThemeSync2 Backend is Live (with slash)!"}
+
+# ✅ Ping Check
+@app.get("/status")
+def status():
+    return {"status": "running", "message": "FastAPI backend is live!"}
+
+# ✅ Token Storage Helpers
 def store_access_token(shop, token):
-    """Store the Shopify access token securely in SQLite."""
     conn = sqlite3.connect("tokens.db")
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS tokens (shop TEXT PRIMARY KEY, access_token TEXT)")
     cursor.execute("INSERT OR REPLACE INTO tokens (shop, access_token) VALUES (?, ?)", (shop, token))
     conn.commit()
     conn.close()
-    logger.info(f"✅ Access token stored securely for shop: {shop}")
 
 def get_access_token(shop):
-    """Retrieve the Shopify access token from SQLite."""
     conn = sqlite3.connect("tokens.db")
     cursor = conn.cursor()
     cursor.execute("SELECT access_token FROM tokens WHERE shop = ?", (shop,))
@@ -90,25 +105,26 @@ def get_access_token(shop):
     conn.close()
     return token[0] if token else None
 
-# ✅ Shopify OAuth - Redirect user to install app
+# ✅ Shopify OAuth Start
 @app.get("/auth")
-def shopify_auth(shop: str = Query(..., description="Shopify store URL")):
-    """Redirect the user to Shopify's OAuth authorization page."""
+def shopify_auth(shop: str = Query(...)):
     auth_url = (
-        f"https://{shop}/admin/oauth/authorize?client_id={SHOPIFY_CLIENT_ID}"
-        f"&scope=read_themes,write_themes&redirect_uri={SHOPIFY_REDIRECT_URI}&state=random_string"
+        f"https://{shop}/admin/oauth/authorize"
+        f"?client_id={SHOPIFY_CLIENT_ID}"
+        f"&scope=read_themes,write_themes,write_products"
+        f"&redirect_uri={SHOPIFY_REDIRECT_URI}"
+        f"&state=random_string"
     )
     return RedirectResponse(url=auth_url)
 
-# ✅ Shopify OAuth Callback - Exchange code for access token
+# ✅ Shopify OAuth Callback
 @app.get("/auth/callback")
 def shopify_callback(code: str, shop: str):
-    """Handle Shopify OAuth callback and exchange the code for an access token."""
     token_url = f"https://{shop}/admin/oauth/access_token"
     payload = {
         "client_id": SHOPIFY_CLIENT_ID,
         "client_secret": SHOPIFY_CLIENT_SECRET,
-        "code": code
+        "code": code,
     }
 
     try:
@@ -117,21 +133,21 @@ def shopify_callback(code: str, shop: str):
         access_token = response.json().get("access_token")
 
         if not access_token:
-            raise HTTPException(status_code=400, detail="Access token not found in response")
+            raise HTTPException(status_code=400, detail="Access token not found")
 
         store_access_token(shop, access_token)
-        return {"message": "OAuth Success!", "access_token": access_token}
+
+        return RedirectResponse(url="https://admin.shopify.com/store/pixelmermaid-lab/apps/themesync2")
 
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=400, detail=f"Failed to get access token: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to get token: {str(e)}")
 
-# ✅ Shopify API - Fetch Themes
+# ✅ REST Endpoint to Fetch Themes
 @app.get("/fetch_themes")
 def fetch_shopify_themes(shop: str):
-    """Fetch themes from a Shopify store using the stored access token."""
     access_token = get_access_token(shop)
     if not access_token:
-        raise HTTPException(status_code=401, detail="❌ ERROR: No Shopify Access Token. Authenticate first!")
+        raise HTTPException(status_code=401, detail="❌ No token found. Authenticate first.")
 
     headers = {"X-Shopify-Access-Token": access_token}
     url = f"https://{shop}/admin/api/2024-01/themes.json"
@@ -143,40 +159,18 @@ def fetch_shopify_themes(shop: str):
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch themes: {str(e)}")
 
-# ✅ Upload & Extract Shopify Themes
+# ✅ Upload Themes (ZIP files)
 UPLOAD_DIR = Path("uploaded_themes")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 @app.post("/upload_theme/")
 async def upload_theme(version: str, file: UploadFile = File(...)):
-    """Upload and extract a theme ZIP file for comparison."""
     version_dir = UPLOAD_DIR / version
+    version_dir.mkdir(parents=True, exist_ok=True)
 
-    if version_dir.exists():
-        shutil.rmtree(version_dir)
-    version_dir.mkdir(exist_ok=True)
+    file_path = version_dir / file.filename
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-    zip_path = version_dir / file.filename
-    try:
-        with open(zip_path, "wb") as buffer:
-            buffer.write(await file.read())
+    return {"message": "✅ Upload successful", "version": version, "filename": file.filename}
 
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(version_dir)
-
-        return {"message": f"Theme {version} uploaded and extracted successfully!"}
-
-    except zipfile.BadZipFile:
-        zip_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=400, detail="Invalid ZIP file. Extraction failed.")
-    except Exception as e:
-        zip_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=f"Unexpected error during extraction: {str(e)}")
-    finally:
-        zip_path.unlink(missing_ok=True)
-
-# ✅ Status Route for Debugging
-@app.get("/status")
-def status():
-    """Check if the server is running correctly."""
-    return {"status": "running", "message": "FastAPI backend is live!"}

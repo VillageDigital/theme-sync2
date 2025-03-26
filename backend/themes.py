@@ -1,32 +1,39 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 import requests
-import os
+import sqlite3
 
 router = APIRouter()
 
-# ✅ Load Shopify Access Token from environment variables
-SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN")
+# ✅ Retrieve the access token from SQLite
+def get_access_token(shop):
+    """Retrieve access token from local SQLite database."""
+    conn = sqlite3.connect("tokens.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT access_token FROM tokens WHERE shop = ?", (shop,))
+    token = cursor.fetchone()
+    conn.close()
+    return token[0] if token else None
 
-if not SHOPIFY_ACCESS_TOKEN:
-    raise ValueError("❌ ERROR: Missing SHOPIFY_ACCESS_TOKEN in .env file!")
-
-SHOPIFY_STORE_URL = "https://village-digital-test.myshopify.com"
-
+# ✅ Endpoint to fetch theme files
 @router.get("/themes/files")
-def get_theme_files(theme_id: str):
+def get_theme_files(shop: str = Query(...), theme_id: str = Query(...)):
     """
-    Fetches the list of theme files from Shopify.
+    Fetch the list of theme files from Shopify for a given shop and theme ID.
     """
+    access_token = get_access_token(shop)
+    if not access_token:
+        raise HTTPException(status_code=401, detail="❌ No access token found. Please authenticate the shop first.")
+
     headers = {
-        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+        "X-Shopify-Access-Token": access_token,
         "Content-Type": "application/json"
     }
 
-    url = f"{SHOPIFY_STORE_URL}/admin/api/2025-01/themes/{theme_id}/assets.json"
+    url = f"https://{shop}/admin/api/2024-01/themes/{theme_id}/assets.json"
 
-    response = requests.get(url, headers=headers)
-
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
         return response.json()
-    else:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=400, detail=f"❌ Failed to fetch theme files: {str(e)}")
