@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-#from fastapi.staticfiles import StaticFiles
+# from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 # ✅ Setup Logging
@@ -59,12 +59,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Mount Remix frontend (for iframe embed at /app)
-#app.mount(
-#    "/app",
-#   StaticFiles(directory=Path(__file__).parent.parent / "theme-sync2" / "public", html=True),
-#    name="frontend",
-#)
+# ✅ Mount Remix frontend (disabled for now)
+# app.mount(
+#     "/app",
+#     StaticFiles(directory=Path(__file__).parent.parent / "theme-sync2" / "public", html=True),
+#     name="frontend",
+# )
 
 # ✅ Include API routes
 app.include_router(themes_router)
@@ -74,14 +74,9 @@ app.include_router(themes_router)
 def root_redirect():
     return RedirectResponse(url="/app")
 
-# ✅ Handle Shopify trailing slash edge case
-@app.get("/app")
-def app_entrypoint():
-    return RedirectResponse(url="/app/")
-
-@app.get("/app/")
-def app_entrypoint_slash():
-    return {"message": "🎉 ThemeSync2 Backend is Live (with slash)!"}
+# ✅ DO NOT re-add the old /app or /app/ routes!
+# FastAPI must NOT hijack Remix's frontend shell.
+# Those routes were just for testing — now they break Remix UI.
 
 # ✅ Ping Check
 @app.get("/status")
@@ -173,4 +168,3 @@ async def upload_theme(version: str, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     return {"message": "✅ Upload successful", "version": version, "filename": file.filename}
-
