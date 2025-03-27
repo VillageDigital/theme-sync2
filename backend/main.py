@@ -10,20 +10,19 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 # ✅ Setup Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ✅ Ensure Python finds 'backend/' path
+# ✅ Add backend path for imports
 sys.path.append(str(Path(__file__).resolve().parent))
 
-# ✅ Load .env file
+# ✅ Load environment variables
 load_dotenv(override=True)
 
-# ✅ Required Environment Vars
+# ✅ Validate critical env vars
 required_env_vars = ["SHOPIFY_CLIENT_ID", "SHOPIFY_CLIENT_SECRET", "SHOPIFY_REDIRECT_URI"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
@@ -36,16 +35,16 @@ VITE_BACKEND_URL = os.getenv("VITE_BACKEND_URL", "http://localhost:8000")
 
 logger.info("✅ Shopify credentials loaded.")
 
-# ✅ Import routes
+# ✅ Import API routes
 try:
     from routes.themes import router as themes_router
 except ModuleNotFoundError:
     from routes.themes import router as themes_router
 
-# ✅ Init FastAPI
+# ✅ Initialize FastAPI app
 app = FastAPI()
 
-# ✅ Enable CORS for Shopify + Localhost + Ngrok
+# ✅ Allow CORS for Shopify + ngrok + local testing
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -59,31 +58,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Mount Remix frontend (disabled for now)
-# app.mount(
-#     "/app",
-#     StaticFiles(directory=Path(__file__).parent.parent / "theme-sync2" / "public", html=True),
-#     name="frontend",
-# )
+# ✅ Mounting Remix frontend is DISABLED (Shopify handles this)
+# Do NOT mount /app or override Remix frontend paths here
 
-# ✅ Include API routes
-app.include_router(themes_router)
-
-# ✅ Root Route → Shopify lands here after install
+# ✅ Root route → redirects Shopify to Remix app shell
 @app.get("/")
 def root_redirect():
     return RedirectResponse(url="/app")
 
-# ✅ DO NOT re-add the old /app or /app/ routes!
-# FastAPI must NOT hijack Remix's frontend shell.
-# Those routes were just for testing — now they break Remix UI.
-
-# ✅ Ping Check
+# ✅ Health check
 @app.get("/status")
 def status():
     return {"status": "running", "message": "FastAPI backend is live!"}
 
-# ✅ Token Storage Helpers
+# ✅ Include theme routes
+app.include_router(themes_router)
+
+# ✅ Token DB helpers
 def store_access_token(shop, token):
     conn = sqlite3.connect("tokens.db")
     cursor = conn.cursor()
@@ -100,7 +91,7 @@ def get_access_token(shop):
     conn.close()
     return token[0] if token else None
 
-# ✅ Shopify OAuth Start
+# ✅ OAuth start
 @app.get("/auth")
 def shopify_auth(shop: str = Query(...)):
     auth_url = (
@@ -112,7 +103,7 @@ def shopify_auth(shop: str = Query(...)):
     )
     return RedirectResponse(url=auth_url)
 
-# ✅ Shopify OAuth Callback
+# ✅ OAuth callback
 @app.get("/auth/callback")
 def shopify_callback(code: str, shop: str):
     token_url = f"https://{shop}/admin/oauth/access_token"
@@ -137,7 +128,7 @@ def shopify_callback(code: str, shop: str):
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Failed to get token: {str(e)}")
 
-# ✅ REST Endpoint to Fetch Themes
+# ✅ Fetch themes
 @app.get("/fetch_themes")
 def fetch_shopify_themes(shop: str):
     access_token = get_access_token(shop)
@@ -154,7 +145,7 @@ def fetch_shopify_themes(shop: str):
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch themes: {str(e)}")
 
-# ✅ Upload Themes (ZIP files)
+# ✅ Upload theme ZIP files
 UPLOAD_DIR = Path("uploaded_themes")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -168,3 +159,8 @@ async def upload_theme(version: str, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     return {"message": "✅ Upload successful", "version": version, "filename": file.filename}
+
+# ✅ Handle /app route for Shopify iframe loading
+@app.get("/app")
+def serve_app_shell():
+    return {"message": "ThemeSync2 app shell is live."}
